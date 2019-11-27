@@ -29,24 +29,25 @@ func init() {
 }
 
 type Response struct {
-	Name        string
-	IP          string
-	RSS         uint64
-	Load        string
-	Uptime      uint64
-	MemAvail    uint64
-	MemTotal    uint64
-	Login       int
-	TCP         int
-	UDP         int
-	DiskRead    []uint64
-	DiskWrite   []uint64
-	NetRead     []uint64
-	NetWrite    []uint64
-	NetReadNum  []uint64
-	NetWriteNum []uint64
-	CPUS        []float64
-	Time        time.Duration
+	Name         string
+	IP           string
+	RSS          uint64
+	Load         string
+	Uptime       uint64
+	MemAvail     uint64
+	MemTotal     uint64
+	Login        int
+	TCP          int
+	UDP          int
+	DiskRead     []uint64
+	DiskWrite    []uint64
+	NetRead      []uint64
+	NetWrite     []uint64
+	NetReadNum   []uint64
+	NetWriteNum  []uint64
+	CPUS         []float64
+	PostUnixTime int64
+	Time         time.Duration
 }
 
 func main() {
@@ -75,6 +76,7 @@ func main() {
 		resp.DiskRead, resp.DiskWrite = GetDiskStatSlice()
 		resp.NetRead, resp.NetWrite, resp.NetReadNum, resp.NetWriteNum = GetNetTrafficSlice()
 
+		resp.PostUnixTime = time.Now().Unix()
 		resp.Time = time.Since(st)
 		s, _ := json.Marshal(resp)
 		(&http.Client{Timeout: time.Minute}).Post(*url, "Content-Type: application/json; charset=utf-8", bytes.NewBuffer(s))

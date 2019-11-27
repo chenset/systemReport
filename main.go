@@ -402,12 +402,13 @@ func GetSystemLoadFromProc() (loadStr string) {
 
 	if dat, err := ioutil.ReadFile("/proc/loadavg"); err == nil {
 		for index, str := range strings.SplitN(string(dat), " ", 4) {
-			loadStr += str
+			loadStr += str + " "
 			if index == 2 {
 				break
 			}
 		}
 	}
+	strings.TrimSpace(loadStr)
 	return
 }
 

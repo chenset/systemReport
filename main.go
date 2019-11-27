@@ -78,7 +78,6 @@ func main() {
 		resp.Time = time.Since(st)
 		s, _ := json.Marshal(resp)
 		(&http.Client{Timeout: time.Minute}).Post(*url, "Content-Type: application/json; charset=utf-8", bytes.NewBuffer(s))
-		log.Println(string(s))
 		time.Sleep(time.Minute)
 	}
 }

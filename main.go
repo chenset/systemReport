@@ -111,7 +111,10 @@ func getIp() string {
 		if err != nil {
 			return
 		}
-		ip = strings.TrimSpace(string(body))
+		s := strings.TrimSpace(string(body))
+		if len(s) > 4 {
+			ip = s[0:len(s)/2] + "****"
+		}
 	})
 	return ip
 }

@@ -92,11 +92,6 @@ var onlyWhiteSpaceRex = regexp.MustCompile(`[ ]+`)
 
 const BlockSize = 512
 
-var CPUTotalSlice = make([]uint64, 60)
-var CPUIdleSlice = make([]uint64, 60)
-
-var getCPUUsageSliceDoOnce sync.Once
-
 var ip string
 
 var getIpOnceDuration = NewDoOnceInDuration(time.Hour * 2)
@@ -123,18 +118,6 @@ var getLoginUsersOnceDuration = NewDoOnceInDuration(time.Minute)
 var LoginUsersOnce int
 
 func LoginUsers() int {
-	//os.OpenFile()
-	//b, err := ioutil.ReadFile("/var/run/utmp")
-	//if err != nil {
-	//	return 0
-	//}
-
-	//log.Println(runLevel.FindAll(b,-1))
-
-	//if _, err := exec.Command("last","-f" ,"/var/run/utmp").Output(); err == nil {
-	//log.Println(string(out))
-	//linuxLogin += "\n\n" + onlyWhiteSpaceRex.ReplaceAllString(string(out), " ")
-	//}
 	getLoginUsersOnceDuration.Do(func() {
 		//slow
 		if out, err := exec.Command("who").Output(); err == nil {
@@ -144,16 +127,22 @@ func LoginUsers() int {
 	return LoginUsersOnce
 }
 
+var CPUTotalSlice = make([]uint64, 15)
+var CPUIdleSlice = make([]uint64, 15)
+
+var getCPUUsageSliceDoOnce sync.Once
+
 func GetCPUUsageSlice() (usages []float64) {
 	getCPUUsageSliceDoOnce.Do(func() {
+		const second = 60
 		go func() {
 			time.Sleep(time.Second * 2)
 			prevTotal, prevIdle := cpuTime()
 			for {
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * second)
 				total, idle := cpuTime()
-				CPUTotalSlice = append(CPUTotalSlice[MaxInt(len(CPUTotalSlice)-59, 0):], total-prevTotal)
-				CPUIdleSlice = append(CPUIdleSlice[MaxInt(len(CPUIdleSlice)-59, 0):], idle-prevIdle)
+				CPUTotalSlice = append(CPUTotalSlice[1:], (total-prevTotal)/second)
+				CPUIdleSlice = append(CPUIdleSlice[1:], (idle-prevIdle)/second)
 				prevTotal, prevIdle = total, idle
 			}
 		}()
@@ -217,6 +206,7 @@ func lineCounterWrap(r *os.File, err error) (count int) {
 		}
 	}
 }
+
 func GetMemInfoFromProc() (available, total uint64) {
 	if runtime.GOOS == "windows" {
 		return
@@ -255,13 +245,14 @@ type DiskStat struct {
 	Write uint64
 }
 
-var ReadSlice = make([]uint64, 60)
-var WriteSlice = make([]uint64, 60)
+var ReadSlice = make([]uint64, 15)
+var WriteSlice = make([]uint64, 15)
 
 var getDiskStatSliceDoOnce sync.Once
 
 func GetDiskStatSlice() ([]uint64, []uint64) {
 	getDiskStatSliceDoOnce.Do(func() {
+		const second = 60
 		go func() {
 			time.Sleep(time.Second * 2)
 			var prevR uint64
@@ -271,15 +262,15 @@ func GetDiskStatSlice() ([]uint64, []uint64) {
 				prevW += e.Write
 			}
 			for {
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * second)
 				var r uint64
 				var w uint64
 				for _, e := range GetDiskStat() {
 					r += e.Read
 					w += e.Write
 				}
-				ReadSlice = append(ReadSlice[MaxInt(len(ReadSlice)-59, 0):], r-prevR)
-				WriteSlice = append(WriteSlice[MaxInt(len(WriteSlice)-59, 0):], w-prevW)
+				ReadSlice = append(ReadSlice[1:], (r-prevR)/second)
+				WriteSlice = append(WriteSlice[1:], (w-prevW)/second)
 				prevR, prevW = r, w
 			}
 		}()
@@ -312,26 +303,27 @@ func GetDiskStat() (d []*DiskStat) {
 	return
 }
 
-var RxSlice = make([]uint64, 60)
-var TxSlice = make([]uint64, 60)
-var RpSlice = make([]uint64, 60)
-var TpSlice = make([]uint64, 60)
+var RxSlice = make([]uint64, 15)
+var TxSlice = make([]uint64, 15)
+var RpSlice = make([]uint64, 15)
+var TpSlice = make([]uint64, 15)
 var getNetTrafficSliceDoOnce sync.Once
 
 func GetNetTrafficSlice() ([]uint64, []uint64, []uint64, []uint64) {
 	//net traffic counter
 	getNetTrafficSliceDoOnce.Do(func() {
 		//if runtime.GOOS == "linux" {
+		const second = 60
 		go func() {
 			time.Sleep(time.Second * 2)
 			prevRx, prevTx, prevRp, prevTp := GetNetTraffic()
 			for {
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * second)
 				rx, tx, rp, tp := GetNetTraffic()
-				RxSlice = append(RxSlice[MaxInt(len(RxSlice)-59, 0):], rx-prevRx)
-				TxSlice = append(TxSlice[MaxInt(len(TxSlice)-59, 0):], tx-prevTx)
-				RpSlice = append(RpSlice[MaxInt(len(RpSlice)-59, 0):], rp-prevRp)
-				TpSlice = append(TpSlice[MaxInt(len(TpSlice)-59, 0):], tp-prevTp)
+				RxSlice = append(RxSlice[1:], (rx-prevRx)/second)
+				TxSlice = append(TxSlice[1:], (tx-prevTx)/second)
+				RpSlice = append(RpSlice[1:], (rp-prevRp)/second)
+				TpSlice = append(TpSlice[1:], (tp-prevTp)/second)
 				prevRx, prevTx, prevRp, prevTp = rx, tx, rp, tp
 			}
 		}()
@@ -339,13 +331,6 @@ func GetNetTrafficSlice() ([]uint64, []uint64, []uint64, []uint64) {
 	})
 
 	return RxSlice, TxSlice, RpSlice, TpSlice
-}
-
-func MaxInt(a, b int) int {
-	if a < b {
-		return b
-	}
-	return a
 }
 
 func GetNetTraffic() (rx, tx, rp, tp uint64) {

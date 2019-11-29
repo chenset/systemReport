@@ -215,7 +215,7 @@ func GetMemInfoFromProc() (available, total uint64) {
 	foundMemAvailable := false
 	// system mem info
 	if dat, err := ioutil.ReadFile("/proc/meminfo"); err == nil {
-		for index, line := range strings.SplitN(string(dat), "\n", 6) {
+		for index, line := range strings.SplitN(string(dat), "\n", 7) {
 
 			if strings.Contains(strings.ToLower(line), "memtotal") {
 				if res := intRex.FindAllString(line, 1); len(res) == 1 {

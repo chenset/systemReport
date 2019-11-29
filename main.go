@@ -212,6 +212,7 @@ func GetMemInfoFromProc() (available, total uint64) {
 		return
 	}
 
+	foundMemAvailable := false
 	// system mem info
 	if dat, err := ioutil.ReadFile("/proc/meminfo"); err == nil {
 		for index, line := range strings.SplitN(string(dat), "\n", 6) {
@@ -224,6 +225,7 @@ func GetMemInfoFromProc() (available, total uint64) {
 				}
 			}
 			if strings.Contains(strings.ToLower(line), "memavailable") {
+				foundMemAvailable = true
 				if res := intRex.FindAllString(line, 1); len(res) == 1 {
 					if kb, err := strconv.ParseUint(res[0], 10, 64); err == nil {
 						available = kb * 1024
@@ -231,6 +233,15 @@ func GetMemInfoFromProc() (available, total uint64) {
 				}
 			}
 			if index > 4 {
+				if foundMemAvailable == false {
+					if strings.Contains(strings.ToLower(line), "memfree") {
+						if res := intRex.FindAllString(line, 1); len(res) == 1 {
+							if kb, err := strconv.ParseUint(res[0], 10, 64); err == nil {
+								available = kb * 1024
+							}
+						}
+					}
+				}
 				break
 			}
 		}

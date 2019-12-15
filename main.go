@@ -158,7 +158,7 @@ func GetCPUUsageSlice() (usages []float64) {
 	return
 }
 
-func cpuTime() (total, idle uint64) {
+func cpuTime() (total, idleTotal uint64) {
 	if dat, err := ioutil.ReadFile("/proc/stat"); err == nil {
 		for _, line := range strings.Split(onlyWhiteSpaceRex.ReplaceAllString(string(dat), " "), "\n") {
 			sp := strings.Split(line, " ")
@@ -178,7 +178,8 @@ func cpuTime() (total, idle uint64) {
 			softirq, _ := strconv.ParseUint(sp[7], 10, 64)
 			stealstolen, _ := strconv.ParseUint(sp[8], 10, 64)
 			guest, _ := strconv.ParseUint(sp[9], 10, 64)
-			return user + nice + system + idle + iowait + irq + softirq + stealstolen + guest, idle
+			total += user + nice + system + idle + iowait + irq + softirq + stealstolen + guest
+			idleTotal += idle
 		}
 	}
 
